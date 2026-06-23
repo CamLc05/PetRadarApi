@@ -45,26 +45,27 @@ export class FoundPetsService {
       ],
     );
 
-    const foundPet = result[0];
+    const savedPet = result[0];
 
-    // Notificar a dueños de mascotas perdidas cercanas
-    const nearbyLostPets = await this.lostPetsService.findNearby(
-      dto.lat,
-      dto.lng,
-    );
-    for (const lostPet of nearbyLostPets) {
-      const html = this.emailService.buildFoundPetEmail(
-        { ...foundPet, found_lng: dto.lng, found_lat: dto.lat },
-        { ...lostPet },
-      );
-      await this.emailService.sendEmail({
-        to: lostPet.owner_email,
-        subject: `🐾 PetRadar - Encontraron una mascota cerca de donde perdiste a ${lostPet.name}`,
-        html,
-      });
+    // Notificar por email — se atrapa el error para que no cancele la respuesta
+    try {
+      const nearbyLostPets = await this.lostPetsService.findNearby(dto.lat, dto.lng);
+      for (const lostPet of nearbyLostPets) {
+        const html = this.emailService.buildFoundPetEmail(
+          { ...savedPet, found_lng: dto.lng, found_lat: dto.lat },
+          { ...lostPet },
+        );
+        await this.emailService.sendEmail({
+          to: lostPet.owner_email,
+          subject: `🐾 PetRadar - Encontraron una mascota cerca de donde perdiste a ${lostPet.name}`,
+          html,
+        });
+      }
+    } catch (error) {
+      console.warn('Notificación por email omitida:', error.message);
     }
 
-    return foundPet;
+    return savedPet;
   }
 
   async findAll(): Promise<any[]> {
@@ -93,9 +94,7 @@ export class FoundPetsService {
       [id],
     );
     if (!result.length) {
-      throw new NotFoundException(
-        `Mascota encontrada con id ${id} no encontrada`,
-      );
+      throw new NotFoundException(`Mascota encontrada con id ${id} no encontrada`);
     }
     return result[0];
   }

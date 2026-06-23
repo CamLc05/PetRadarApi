@@ -76,11 +76,7 @@ export class LostPetsService {
     return result[0];
   }
 
-  async findNearby(
-    lat: number,
-    lng: number,
-    radiusMeters = 500,
-  ): Promise<any[]> {
+  async findNearby(lat: number, lng: number, radiusMeters = 500): Promise<any[]> {
     return this.dataSource.query(
       `SELECT *,
           ST_X(location::geometry) AS lost_lng,
